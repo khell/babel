@@ -222,11 +222,16 @@ export function tsPrintBraced(members, node) {
   this.token("{");
   if (members.length) {
     this.indent();
-    this.newline();
+    if (!node.newlines) {
+      this.newline();
+    }
+
     for (const member of members) {
       this.print(member, node);
       //this.token(sep);
-      this.newline();
+      if (!node.newlines) {
+        this.newline();
+      }
     }
     this.dedent();
     this.rightBrace();
@@ -299,6 +304,13 @@ export function TSInferType(node) {
 export function TSParenthesizedType(node) {
   this.token("(");
   this.print(node.typeAnnotation, node);
+  this.token(")");
+}
+
+export function TSTypeCastExpression(node) {
+  this.token("(");
+  this.print(node.expression);
+  this.print(node.typeAnnotation);
   this.token(")");
 }
 
