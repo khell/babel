@@ -24,17 +24,24 @@ export function BlockStatement(node: Object) {
   const hasDirectives = node.directives && node.directives.length;
 
   if (node.body.length || hasDirectives) {
-    this.newline();
+    if (!node.newlines) {
+      this.newline();
+    }
 
     this.printSequence(node.directives, node, { indent: true });
     if (hasDirectives) this.newline();
 
     this.printSequence(node.body, node, { indent: true });
-    this.removeTrailingNewline();
+
+    if (!node.newlines) {
+      this.removeTrailingNewline();
+    }
 
     this.source("end", node.loc);
 
-    if (!this.endsWith("\n")) this.newline();
+    if (!node.newlines) {
+      if (!this.endsWith("\n")) this.newline();
+    }
 
     this.rightBrace();
   } else {

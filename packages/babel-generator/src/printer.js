@@ -28,6 +28,23 @@ export type Format = {
   decoratorsBeforeExport: boolean,
 };
 
+function getChildren(node) {
+  switch (node.type) {
+    case "Program":
+    case "BlockStatement":
+    case "ClassBody":
+      return node.body;
+    case "ObjectExpression":
+      return node.properties;
+    case "TSTypeLiteral":
+      return node.members;
+    case "SwitchStatement":
+      return node.cases;
+    default:
+      throw new Error(`cannot computed newlines on ${node.type} node`);
+  }
+}
+
 export default class Printer {
   constructor(format, map) {
     this.format = format || {};
@@ -363,14 +380,32 @@ export default class Printer {
     }
     if (needsParens) this.token("(");
 
-    this._printLeadingComments(node);
+    if (parent && parent.newlines) {
+      const children = getChildren(parent);
+      const index = children.indexOf(node);
+      const newlines = parent.newlines[index];
+      if (newlines) this._printNewlines(newlines);
+    } else {
+      this._printLeadingComments(node);
+    }
 
     const loc = t.isProgram(node) || t.isFile(node) ? null : node.loc;
     this.withSource("start", loc, () => {
       printMethod.call(this, node, parent);
     });
 
-    this._printTrailingComments(node);
+    if (parent && parent.newlines) {
+      const children = getChildren(parent);
+      // All newlines move trailing comments to be part of the previous
+      // statement's newlines.  The final statement's trailing comments
+      // are stored in an extra array of newlines which are printed here.
+      if (children.indexOf(node) === children.length - 1) {
+        const newlines = parent.newlines[children.length];
+        if (newlines) this._printNewlines(newlines);
+      }
+    } else {
+      this._printTrailingComments(node);
+    }
 
     if (needsParens) this.token(")");
 
@@ -412,6 +447,16 @@ export default class Printer {
     }
   }
 
+  _printNewlines(newlines) {
+    for (const line of newlines) {
+      if (line) {
+        this._printComment(line);
+      } else {
+        this._newline();
+      }
+    }
+  }
+
   getPossibleRaw(node) {
     const extra = node.extra;
     if (
@@ -437,7 +482,12 @@ export default class Printer {
       const node = nodes[i];
       if (!node) continue;
 
-      if (opts.statement) this._printNewline(true, node, parent, newlineOpts);
+      if (opts.statement) {
+        const hasNewlines = parent.newlines && parent.newlines[i];
+        if (!hasNewlines) {
+          this._printNewline(true, node, parent, newlineOpts);
+        }
+      }
 
       this.print(node, parent);
 
@@ -449,7 +499,12 @@ export default class Printer {
         opts.separator.call(this);
       }
 
-      if (opts.statement) this._printNewline(false, node, parent, newlineOpts);
+      if (opts.statement) {
+        const hasNewlines = parent.newlines && parent.newlines[i + 1];
+        if (!hasNewlines) {
+          this._printNewline(false, node, parent, newlineOpts);
+        }
+      }
     }
 
     if (opts.indent) this.dedent();
