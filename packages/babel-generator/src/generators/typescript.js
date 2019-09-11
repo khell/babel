@@ -302,6 +302,13 @@ export function TSParenthesizedType(node) {
   this.token(")");
 }
 
+export function TSTypeCastExpression(node) {
+  this.token("(");
+  this.print(node.expression);
+  this.print(node.typeAnnotation);
+  this.token(")");
+}
+
 export function TSTypeOperator(node) {
   this.token(node.operator);
   this.space();
