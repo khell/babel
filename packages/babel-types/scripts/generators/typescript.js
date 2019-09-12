@@ -41,6 +41,7 @@ interface BaseNode {
   leadingComments: ReadonlyArray<Comment> | null;
   innerComments: ReadonlyArray<Comment> | null;
   trailingComments: ReadonlyArray<Comment> | null;
+  newlines: Array<Array<undefined>> | null | undefined;
   start: number | null;
   end: number | null;
   loc: SourceLocation | null;
