@@ -15,6 +15,7 @@ import defineType, {
   assertEach,
   chain,
   assertOneOf,
+  validateOptionalType,
 } from "./utils";
 
 defineType("ArrayExpression", {
@@ -311,6 +312,7 @@ export const functionCommon = {
     validate: assertValueType("boolean"),
     default: false,
   },
+  predicate: validateOptionalType("DeclaredPredicate"),
 };
 
 export const functionTypeAnnotationCommon = {
